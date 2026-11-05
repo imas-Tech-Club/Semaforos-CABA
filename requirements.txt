@@ -1,0 +1,9 @@
+# SUMO completo (sumo, sumo-gui, netconvert, herramientas) vía pip; sirve en Windows, Linux y macOS.
+eclipse-sumo==1.28.0
+traci==1.28.0
+sumolib==1.28.0
+sumo-rl==1.4.5
+# sumo-rl 1.4.5 falla con NumPy >= 2.4 (int() sobre arrays de 1 elemento).
+numpy<2.4
+pandas
+pyproj  # sumolib lo usa para convertir lat/lon a coordenadas de la red
