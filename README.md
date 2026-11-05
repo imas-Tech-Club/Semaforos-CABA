@@ -14,6 +14,7 @@ Sistema de análisis y simulación para estudiar posibles mejoras en los tiempos
 | `scenarios/` | Escenarios de SUMO (red + demanda). Ver [scenarios/README.md](scenarios/README.md) |
 | `scripts/run_sumo_rl_demo.py` | Plan fijo vs. Q-learning (SUMO-RL) sobre un escenario |
 | `scripts/build_scenario.py` | **Regenera un escenario desde OpenStreetMap.** Usarlo para crear o reconstruir cruces |
+| `scripts/validar_demoras.py` | Velocidad simulada por calle y franja; compara con datos observados |
 | `scripts/tls_template.py` | Genera la plantilla para cargar tiempos reales de un semáforo |
 | `docs/setup-sumo.md` | Instalación y problemas conocidos |
 | `docs/integracion.md` | Cómo se conectan los datos de las otras tareas con la simulación |

@@ -37,8 +37,10 @@ La columna "horario", si indica que un cruce tiene planes distintos por franja, 
 ### Tarea 2: GTFS y mapa de demoras (Karo)
 **Aporta:** velocidad y demora por tramo y franja, calculadas desde los colectivos.
 **Se integra en:** la **validación**, no como entrada. Sirve para comprobar que el gemelo se parece a lo observado (entregable 2).
-- Hay que correr la simulación del corredor, sacar la velocidad media por calle y franja, y compararla con la del GTFS.
-- **No existe todavía** el script que exporta velocidades por calle desde SUMO. Es trabajo nuevo: sería `scripts/validar_demoras.py`, que lee el resultado de SUMO (opción `--edgedata-output`) y lo cruza con el CSV de demoras de Karo. Conviene definir con ella el formato (calle, franja, velocidad) antes de escribirlo.
+- `python scripts/validar_demoras.py <nombre>` corre la simulación y escribe `results/<nombre>/validacion_sim.csv` con la velocidad simulada por **calle y franja** (por defecto, franjas de 900 s).
+- `python scripts/validar_demoras.py <nombre> --observado velocidades.csv` además compara contra los datos de Karo y da el error absoluto medio y el sesgo.
+- **Formato que espera** (hay que acordarlo con Karo, lo fijó el script): CSV con `calle,t_inicio_s,velocidad_kmh`. La calle debe llamarse igual que en OSM (se ve en `validacion_sim.csv`) y `t_inicio_s` debe coincidir con el inicio de una franja de simulación.
+- **Probado con datos de prueba inventados**, no con datos reales: comprueba que el procedimiento funciona (el error se calcula bien, avisa lo que no empareja y rechaza CSV mal formados). Todavía no validó nada del gemelo.
 - Limitación a tener presente: el GPS de los colectivos no da los tiempos exactos del semáforo, solo demoras.
 
 ### Tarea 3: API de Transporte (Daniel)
@@ -120,7 +122,7 @@ El `programID` del plan debe ser distinto de `0` (que ya existe en la red); la p
 | Tiempos de semáforo reales | Tareas 4 y 8 | Sin datos. Punto de entrada listo |
 | Conteos reales | Tarea 4 | Sin datos. Punto de entrada listo |
 | Corredor elegido | Tareas 1, 5, 6 | Soporta varios semáforos, sin zona elegida |
-| Validación contra demoras | Tarea 2 | Falta `scripts/validar_demoras.py` |
+| Validación contra demoras | Tarea 2 | Script listo y probado con datos de prueba. Faltan los datos reales y acordar el formato |
 | Gráficos de resultados | — | No existen todavía |
 | Entrenamiento serio de RL | Plan y demanda reales | Hoy 1 a 5 episodios, solo como prueba técnica |
 
