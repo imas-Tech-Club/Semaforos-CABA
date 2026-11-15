@@ -93,7 +93,7 @@ Y la columna relacionada `instala`:
 | # | Problema | Alcance | Cómo lo tratamos |
 |---|---|---|---|
 | 1 | **Coordenadas del CSV con separador de miles**: `-583.693.183.994.195` en lugar de `-58.3693183994195`. Además la metadata dice "coordenadas planas", pero son grados WGS84. | Todas las filas | Usar el GeoJSON. Si hace falta el CSV: quitar los puntos y poner el decimal después de los 2 primeros dígitos. Verificado: las 3.934 coordenadas reconstruidas coinciden con el GeoJSON (diferencia < 1e-4°). |
-| 2 | **Doble codificación UTF-8** (mojibake): "Paseo ColÃ³n" en vez de "Paseo Colón". | 1.675 filas (42%) | Decodificar `latin-1 → utf-8` en los campos con `Ã`. |
+| 2 | **Doble codificación UTF-8** (mojibake): "Paseo ColÃ³n" en vez de "Paseo Colón". | 1.675 filas (42%) | Re-codificar como cp1252 y decodificar como UTF-8. 4 valores tienen bytes que cp1252 no define (`\x81`, `\x8d`) y van como latin-1. Ver [Cómo cargarlo](#cómo-cargarlo). |
 | 3 | **Filas corridas**: los cruces "Melian y Pico" y "Melian y Vedia" tienen las columnas desplazadas (el nombre quedó en `id_codigo`, "Saavedra" en `objeto`, etc.). | 2 filas | Corregir a mano o tomar del GeoJSON (son `B-CR-03591` y `B-CR-03592`). |
 | 4 | **Código duplicado**: `B-CR-03592` aparece 2 veces con coordenadas casi iguales (~2 m). | 1 código | Deduplicar por `id_codigo`, quedarse con la fila con domicilio normalizado. |
 | 5 | **Registros sin código**. | 4 filas CSV, 4 features GeoJSON | Descartar o revisar a mano si caen en el corredor. |
@@ -117,4 +117,71 @@ Y la columna relacionada `instala`:
 
 ## Dónde están los archivos
 
-Los dos archivos están versionados en [`data/cruces-semaforizados/`](../../data/cruces-semaforizados/), tal cual los publica la Ciudad (sin corregir). Los comandos para verificarlos y actualizarlos están en el [README de datos](README.md#actualizar-cruces-semaforizados).
+Los dos archivos están versionados en [`data/cruces-semaforizados/`](../../data/cruces-semaforizados/), tal cual los publica la Ciudad (sin corregir). No se editan: las correcciones se aplican al cargarlos. Cómo actualizarlos: [README de datos](README.md#actualizar-cruces-semaforizados).
+
+## Cómo cargarlo
+
+Probado sobre los archivos versionados (descarga del 15/11/2026), desde la raíz del repo y sin dependencias externas.
+
+GeoJSON, la fuente recomendada para ubicación. Devuelve un diccionario por `id_codigo`, con el ID limpio, sin registros sin código y sin duplicados:
+
+```python
+import json
+from pathlib import Path
+
+DATA_DIR = Path("data/cruces-semaforizados")
+
+
+def load_crossings():
+    features = json.loads((DATA_DIR / "cruces-semaforizados.geojson").read_text(encoding="utf-8"))["features"]
+    crossings = {}
+    for feature in features:
+        code = (feature["properties"]["ID_Codigo"] or "").strip()
+        if not code:
+            continue
+        longitude, latitude = feature["geometry"]["coordinates"]
+        crossings.setdefault(code, {**feature["properties"], "id_codigo": code, "lon": longitude, "lat": latitude})
+    return crossings
+```
+
+Resultado esperado: 3.940 cruces (de 3.946 features: 4 sin código y 2 que repiten un ID una vez limpiado el `\r\n`).
+
+CSV, sólo si hacen falta columnas que el GeoJSON no tiene (`barrio`, `comuna`, `calle_nombre`, etc.). Arregla el encoding y las coordenadas; **no** arregla las 2 filas corridas ni el duplicado:
+
+```python
+import csv
+from pathlib import Path
+
+DATA_DIR = Path("data/cruces-semaforizados")
+BYTES_UNDEFINED_IN_CP1252 = "\x81\x8d\x8f\x90\x9d"
+
+
+def fix_mojibake(text):
+    if "Ã" not in text and "Â" not in text:
+        return text
+    raw = b"".join(
+        character.encode("latin-1") if character in BYTES_UNDEFINED_IN_CP1252 else character.encode("cp1252")
+        for character in text
+    )
+    return raw.decode("utf-8")
+
+
+def parse_csv_coordinate(raw):
+    digits = raw.replace(".", "").replace("-", "")
+    return -float(f"{digits[:2]}.{digits[2:]}") if digits else None
+
+
+def load_crossings_csv():
+    with open(DATA_DIR / "cruces-semaforizados.csv", encoding="utf-8-sig", newline="") as handle:
+        rows = list(csv.DictReader(handle, delimiter=";"))
+    return [
+        {
+            **{column: fix_mojibake(value) for column, value in row.items()},
+            "lon": parse_csv_coordinate(row["long"]),
+            "lat": parse_csv_coordinate(row["lat"]),
+        }
+        for row in rows
+    ]
+```
+
+Resultado esperado: 3.940 filas; `Paseo Colón Av. y La Rábida` en `dom_orig` de la primera fila; coordenadas iguales a las del GeoJSON con una diferencia menor a 1e-4°.
