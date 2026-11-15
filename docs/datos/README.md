@@ -44,12 +44,45 @@ Cada dimensión se califica como:
 3. **Para ubicar cruces usar el GeoJSON, no el CSV.** El GeoJSON tiene coordenadas WGS84 correctas y 7 cruces más.
 4. Los datos de 2019 son pre-pandemia: sirven para la red de paradas y recorridos, pero no para calibrar demanda actual sin validación.
 
-## Cómo se registran los archivos
+## Archivos en el repo
 
-Los archivos crudos no se versionan en el repo (el GTFS pesa 209 MB comprimido). Cada ficha documenta la URL de descarga, la fecha y el SHA-256 del archivo usado, para que cualquiera pueda verificar que trabaja con la misma versión:
+| Fuente | Ubicación | ¿Versionado? |
+|---|---|---|
+| Cruces Semaforizados (CSV + GeoJSON) | [`data/cruces-semaforizados/`](../../data/cruces-semaforizados/) | Sí (2,6 MB en total), con `SHA256SUMS` |
+| GTFS de colectivos | `data/raw/gtfs/` (local) | No: pesa 209 MB, más que el límite de 100 MB por archivo de GitHub. Cada uno lo baja con el comando de abajo |
+
+`.gitattributes` marca `data/**` como binario para que git no convierta los finales de línea (el CSV viene con CRLF) y los hashes sigan coincidiendo después de clonar.
+
+### Verificar que los archivos son los documentados
 
 ```bash
-shasum -a 256 <archivo>
+cd data/cruces-semaforizados && shasum -a 256 -c SHA256SUMS
 ```
 
-Si el hash no coincide, la fuente cambió: hay que volver a perfilar y actualizar la ficha.
+### Actualizar Cruces Semaforizados
+
+Bajar la versión publicada y comparar contra la versionada:
+
+```bash
+cd data/cruces-semaforizados
+curl -fsSO https://cdn.buenosaires.gob.ar/datosabiertos/datasets/transporte-y-obras-publicas/cruces-semaforizados/cruces-semaforizados.csv
+curl -fsSO https://cdn.buenosaires.gob.ar/datosabiertos/datasets/transporte-y-obras-publicas/cruces-semaforizados/cruces-semaforizados.geojson
+shasum -a 256 -c SHA256SUMS
+```
+
+- Si dice `OK` en ambos: la fuente no cambió, no hay nada que hacer (`git status` queda limpio).
+- Si alguno da `FAILED`: la Ciudad publicó una versión nueva. Hay que regenerar los hashes, volver a perfilar y actualizar la ficha ([cruces-semaforizados.md](cruces-semaforizados.md)) en el mismo PR:
+
+```bash
+shasum -a 256 cruces-semaforizados.csv cruces-semaforizados.geojson > SHA256SUMS
+```
+
+Para ver si cambió la metadata (fecha, frecuencia, estado) sin bajar los archivos, abrir en el navegador `https://data.buenosaires.gob.ar/api/3/action/package_show?id=cruces-semaforizados` y mirar `metadata_modified` y el `last_modified` de cada recurso. Ese dominio rechaza `curl` sin user-agent de navegador; el CDN no.
+
+### Bajar el GTFS de colectivos
+
+```bash
+mkdir -p data/raw/gtfs && cd data/raw/gtfs
+curl -fsSO https://cdn.buenosaires.gob.ar/datosabiertos/datasets/transporte-y-obras-publicas/colectivos-gtfs/colectivos-gtfs.zip
+echo "e87bbce4d6c7372b9c7f6435f76dc26842b4f0637ad071aca85b2896dce6769e  colectivos-gtfs.zip" | shasum -a 256 -c
+```

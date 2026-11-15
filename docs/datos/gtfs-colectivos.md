@@ -85,11 +85,7 @@ Para demoras observadas hace falta GTFS-Realtime o posiciones de vehículos (API
 
 ## Cómo reproducir
 
-```bash
-mkdir -p data/raw/gtfs && cd data/raw/gtfs
-curl -sO https://cdn.buenosaires.gob.ar/datosabiertos/datasets/transporte-y-obras-publicas/colectivos-gtfs/colectivos-gtfs.zip
-shasum -a 256 colectivos-gtfs.zip
-```
+No está versionado en el repo (209 MB, supera el límite de GitHub). Para bajarlo y verificarlo, ver el [README de datos](README.md#bajar-el-gtfs-de-colectivos).
 
 `stop_times.txt` pesa 1,4 GB descomprimido: conviene leerlo en streaming o filtrarlo por `stop_id` del corredor antes de cargarlo en memoria.
 

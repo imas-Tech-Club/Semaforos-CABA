@@ -115,13 +115,6 @@ Y la columna relacionada `instala`:
 | Consistencia | **No garantizado** | Ver problemas 1–7 |
 | Reproducibilidad | Garantizado | URL estable del CDN + SHA-256 registrado arriba |
 
-## Cómo reproducir
+## Dónde están los archivos
 
-```bash
-mkdir -p data/raw/cruces && cd data/raw/cruces
-curl -sO https://cdn.buenosaires.gob.ar/datosabiertos/datasets/transporte-y-obras-publicas/cruces-semaforizados/cruces-semaforizados.csv
-curl -sO https://cdn.buenosaires.gob.ar/datosabiertos/datasets/transporte-y-obras-publicas/cruces-semaforizados/cruces-semaforizados.geojson
-shasum -a 256 cruces-semaforizados.csv cruces-semaforizados.geojson
-```
-
-`data.buenosaires.gob.ar` rechaza pedidos sin user-agent de navegador ("Request Rejected"); el CDN (`cdn.buenosaires.gob.ar`) responde normal.
+Los dos archivos están versionados en [`data/cruces-semaforizados/`](../../data/cruces-semaforizados/), tal cual los publica la Ciudad (sin corregir). Los comandos para verificarlos y actualizarlos están en el [README de datos](README.md#actualizar-cruces-semaforizados).
