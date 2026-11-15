@@ -17,10 +17,10 @@ Tarea 1 de la reunión del 4/11: descargar el CSV de Cruces Semaforizados y revi
 
 ### Archivos descargados
 
-| Formato | URL | Tamaño | SHA-256 |
-|---|---|---|---|
-| CSV | `https://cdn.buenosaires.gob.ar/datosabiertos/datasets/transporte-y-obras-publicas/cruces-semaforizados/cruces-semaforizados.csv` | 683.007 B | `1283d338319a3706e045a02e96231572db92a8ffdbe5a57f1a0a187579eba527` |
-| GeoJSON | `https://cdn.buenosaires.gob.ar/datosabiertos/datasets/transporte-y-obras-publicas/cruces-semaforizados/cruces-semaforizados.geojson` | 1.958.498 B | `9a5992d640c0bc8cd14b1b5084f28d76866b6aa684c2541800261c77ec6c4a6f` |
+| Formato | URL | Tamaño |
+|---|---|---|
+| CSV | `https://cdn.buenosaires.gob.ar/datosabiertos/datasets/transporte-y-obras-publicas/cruces-semaforizados/cruces-semaforizados.csv` | 683.007 B |
+| GeoJSON | `https://cdn.buenosaires.gob.ar/datosabiertos/datasets/transporte-y-obras-publicas/cruces-semaforizados/cruces-semaforizados.geojson` | 1.958.498 B |
 
 ## Qué contiene
 
@@ -113,7 +113,7 @@ Y la columna relacionada `instala`:
 | Exactitud — ubicación | Garantizado (con salvedades) | CSV y GeoJSON coinciden; 146 cruces geolocalizados por domicilio o sin geocodificar |
 | Exactitud — tiempos de fase | **No existe** | El dataset no tiene duraciones de verde/rojo ni fases |
 | Consistencia | **No garantizado** | Ver problemas 1–7 |
-| Reproducibilidad | Garantizado | URL estable del CDN + SHA-256 registrado arriba |
+| Reproducibilidad | Garantizado | Archivos versionados en `data/cruces-semaforizados/` |
 
 ## Dónde están los archivos
 

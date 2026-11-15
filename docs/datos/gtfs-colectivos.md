@@ -24,9 +24,9 @@ Tarea 2 de la reunión del 4/11: bajar el GTFS de colectivos y armar el mapa de 
 
 ### Archivo descargado
 
-| URL | Tamaño | SHA-256 |
-|---|---|---|
-| `https://cdn.buenosaires.gob.ar/datosabiertos/datasets/transporte-y-obras-publicas/colectivos-gtfs/colectivos-gtfs.zip` | 209.195.824 B (1,46 GB descomprimido) | `e87bbce4d6c7372b9c7f6435f76dc26842b4f0637ad071aca85b2896dce6769e` |
+| URL | Tamaño |
+|---|---|
+| `https://cdn.buenosaires.gob.ar/datosabiertos/datasets/transporte-y-obras-publicas/colectivos-gtfs/colectivos-gtfs.zip` | 209.195.824 B (1,46 GB descomprimido) |
 
 ## Qué contiene
 
@@ -81,7 +81,7 @@ Para demoras observadas hace falta GTFS-Realtime o posiciones de vehículos (API
 | Completitud | Garantizado | Todos los archivos obligatorios de GTFS presentes; 0% de horarios vacíos en la muestra |
 | Exactitud | **No garantizado** | Horarios programados, no observados; 88% interpolados |
 | Consistencia | Garantizado a nivel estructura | Columnas según especificación GTFS; no se corrió un validador completo (ej. `gtfs-validator` de MobilityData) |
-| Reproducibilidad | Garantizado | URL estable + SHA-256 registrado arriba |
+| Reproducibilidad | Parcial | URL estable, pero el archivo no se versiona en el repo y la Ciudad podría reemplazarlo en la misma URL |
 
 ## Cómo reproducir
 

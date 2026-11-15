@@ -18,7 +18,7 @@ Para cada fuente respondemos las mismas preguntas, así podemos decidir si un da
 | Completitud | ¿Qué porcentaje de los registros tiene el campo que necesitamos? |
 | Exactitud | ¿El dato es observado, programado o estimado? |
 | Consistencia | ¿Coinciden los distintos formatos de la misma fuente? ¿Hay duplicados o filas rotas? |
-| Reproducibilidad | ¿Podemos volver a bajar exactamente el mismo archivo? (URL + SHA-256) |
+| Reproducibilidad | ¿Podemos trabajar todos con el mismo archivo? |
 
 Cada dimensión se califica como:
 
@@ -35,7 +35,7 @@ Cada dimensión se califica como:
 | Completitud | Garantizado para ubicación (100% con coordenadas en GeoJSON); `horario` sólo en 3,4% | Garantizado: 100% de `stop_times` con horario |
 | Exactitud | Ubicación: garantizada. Tiempos de fase: **no existen en el dataset** | Horarios **programados**, no observados; 88% interpolados (`timepoint=0`) |
 | Consistencia | No garantizado: CSV con encoding roto, coordenadas mal formateadas, filas corridas y duplicados | Garantizado a nivel estructura (archivos GTFS válidos) |
-| Reproducibilidad | Garantizado: URL estable + SHA-256 registrado | Garantizado: URL estable + SHA-256 registrado |
+| Reproducibilidad | Garantizado: archivos versionados en el repo | Parcial: URL estable, pero el archivo no se versiona y la Ciudad podría reemplazarlo |
 
 ## Conclusiones para el MVP
 
@@ -48,34 +48,24 @@ Cada dimensión se califica como:
 
 | Fuente | Ubicación | ¿Versionado? |
 |---|---|---|
-| Cruces Semaforizados (CSV + GeoJSON) | [`data/cruces-semaforizados/`](../../data/cruces-semaforizados/) | Sí (2,6 MB en total), con `SHA256SUMS` |
+| Cruces Semaforizados (CSV + GeoJSON) | [`data/cruces-semaforizados/`](../../data/cruces-semaforizados/) | Sí, como dataset de prueba (2,6 MB en total), descargado el 15/11/2026 |
 | GTFS de colectivos | `data/raw/gtfs/` (local) | No: pesa 209 MB, más que el límite de 100 MB por archivo de GitHub. Cada uno lo baja con el comando de abajo |
 
-`.gitattributes` marca `data/**` como binario para que git no convierta los finales de línea (el CSV viene con CRLF) y los hashes sigan coincidiendo después de clonar.
-
-### Verificar que los archivos son los documentados
-
-```bash
-cd data/cruces-semaforizados && shasum -a 256 -c SHA256SUMS
-```
+`.gitattributes` marca `data/**` como binario para que git guarde los archivos byte a byte (el CSV viene con finales de línea CRLF). Así, al volver a bajarlos, `git status` sólo marca cambios si la Ciudad publicó algo distinto.
 
 ### Actualizar Cruces Semaforizados
 
-Bajar la versión publicada y comparar contra la versionada:
+Bajar la versión publicada encima de la versionada:
 
 ```bash
 cd data/cruces-semaforizados
 curl -fsSO https://cdn.buenosaires.gob.ar/datosabiertos/datasets/transporte-y-obras-publicas/cruces-semaforizados/cruces-semaforizados.csv
 curl -fsSO https://cdn.buenosaires.gob.ar/datosabiertos/datasets/transporte-y-obras-publicas/cruces-semaforizados/cruces-semaforizados.geojson
-shasum -a 256 -c SHA256SUMS
+git status --short .
 ```
 
-- Si dice `OK` en ambos: la fuente no cambió, no hay nada que hacer (`git status` queda limpio).
-- Si alguno da `FAILED`: la Ciudad publicó una versión nueva. Hay que regenerar los hashes, volver a perfilar y actualizar la ficha ([cruces-semaforizados.md](cruces-semaforizados.md)) en el mismo PR:
-
-```bash
-shasum -a 256 cruces-semaforizados.csv cruces-semaforizados.geojson > SHA256SUMS
-```
+- Si `git status` no muestra nada: la fuente no cambió, no hay nada que hacer.
+- Si muestra algún archivo modificado: la Ciudad publicó una versión nueva. Hay que volver a perfilar y actualizar la ficha ([cruces-semaforizados.md](cruces-semaforizados.md)) en el mismo PR que los archivos.
 
 Para ver si cambió la metadata (fecha, frecuencia, estado) sin bajar los archivos, abrir en el navegador `https://data.buenosaires.gob.ar/api/3/action/package_show?id=cruces-semaforizados` y mirar `metadata_modified` y el `last_modified` de cada recurso. Ese dominio rechaza `curl` sin user-agent de navegador; el CDN no.
 
@@ -84,5 +74,4 @@ Para ver si cambió la metadata (fecha, frecuencia, estado) sin bajar los archiv
 ```bash
 mkdir -p data/raw/gtfs && cd data/raw/gtfs
 curl -fsSO https://cdn.buenosaires.gob.ar/datosabiertos/datasets/transporte-y-obras-publicas/colectivos-gtfs/colectivos-gtfs.zip
-echo "e87bbce4d6c7372b9c7f6435f76dc26842b4f0637ad071aca85b2896dce6769e  colectivos-gtfs.zip" | shasum -a 256 -c
 ```
