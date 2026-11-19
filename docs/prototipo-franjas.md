@@ -29,18 +29,20 @@ python scripts/demo_franjas.py --franjas pico valle --episodes 10 --eval-seeds 4
 python scripts/graficar_franjas.py                  # genera docs/franjas_fijo_vs_ql.png
 ```
 
-La corrida completa de las 4 franjas en paralelo, en una PC de 2 núcleos, tardó unos 5 minutos. Las salidas quedan en `results/franjas/` (no se versiona): `resumen.csv`, `evaluaciones.csv` (una fila por demanda de evaluación) y `aprendizaje.csv`.
+La corrida completa de las 4 franjas (sin `--franjas`) tardó unos 8 minutos en un contenedor de 2 núcleos. Las salidas quedan en `results/franjas/` (no se versiona): `resumen.csv`, `evaluaciones.csv` (una fila por demanda de evaluación) y `aprendizaje.csv`. Una corrida de ejemplo, ya lista para mirar, está en `results_ejemplo/`.
 
-## Resultados de la corrida del 14/11 (mediana de 4 demandas de evaluación)
+## Resultados de la corrida del 19/11 (mediana de 4 demandas de evaluación)
 
 | Franja | Espera media, fijo (s) | Espera media, Q-learning (s) | Detenidos, fijo | Detenidos, Q-learning |
 |---|---|---|---|---|
-| Madrugada | 2,86 | 0,05 | 0,20 | 0,02 |
-| Pico | 3,68 | 0,26 | 3,40 | 0,64 |
-| Valle de tarde | 3,55 | 0,12 (*) | 1,34 | 0,18 (*) |
-| Noche | 3,51 | 0,14 | 2,45 | 0,36 |
+| Madrugada | 3,21 | 0,06 | 0,21 | 0,02 |
+| Pico | 3,68 | 0,20 | 3,46 | 0,60 |
+| Valle de tarde | 3,49 | 0,11 | 1,34 | 0,17 |
+| Noche | 3,51 | 0,15 | 2,45 | 0,36 |
 
-(*) En el valle, **1 de las 4 demandas de evaluación hizo colapsar a Q-learning**: espera media de 351 s y 28 vehículos detenidos en promedio, con picos de 56. En las otras 3 el resultado fue el de la tabla. En las otras 3 franjas no hubo colapsos: 15 de 16 evaluaciones fueron muy favorables a Q-learning y 1 fue un fracaso.
+En esta corrida las 16 evaluaciones de Q-learning (4 franjas × 4 demandas) dieron valores bajos y **no hubo colapso**.
+
+**Inestabilidad ya observada:** en la corrida del 14/11, con la misma configuración, 1 de las 4 demandas del valle hizo colapsar a Q-learning (espera media de 351 s y 28 vehículos detenidos en promedio, con picos de 56). Que una corrida no colapse no prueba que el agente sea estable: el resultado depende de la semilla y del entrenamiento.
 
 Gráfico: `docs/franjas_fijo_vs_ql.png`. La "espera media" es la métrica `system_mean_waiting_time` de SUMO-RL: sirve para comparar planes entre sí, no para decir cuántos minutos pierde cada conductor.
 
@@ -48,7 +50,7 @@ Gráfico: `docs/franjas_fijo_vs_ql.png`. La "espera media" es la métrica `syste
 
 - **Qué sí muestran:** el pipeline completo funciona (red real, demanda por franja, entrenamiento, evaluación en demandas nuevas, gráfico). Un controlador adaptativo, con demanda moderada, puede reducir mucho las esperas frente a un plan fijo genérico.
 - **Qué no muestran:** que Q-learning mejore el plan real del cruce. El plan fijo es de relleno (ciclo de 90 s) y la demanda es supuesta. La diferencia es grande en parte porque ese plan no está pensado para este cruce.
-- **El colapso del valle es un hallazgo en sí mismo:** el agente es tabular, no explora al evaluar y puede encontrar estados que no vio al entrenar (el script usa la acción 0 en esos casos). El colapso empezó cerca del segundo 1.000 de la hora simulada. No confirmé la causa exacta. Un controlador que falla una de cada cuatro veces no sirve sin una salvaguarda (por ejemplo, un tiempo máximo de verde).
+- **El colapso del 14/11 es un hallazgo en sí mismo:** el agente es tabular, no explora al evaluar y puede encontrar estados que no vio al entrenar (el script usa la acción 0 en esos casos). En esa corrida el colapso empezó cerca del segundo 1.000 de la hora simulada. No confirmé la causa exacta. Un controlador que falla algunas veces no sirve sin una salvaguarda (por ejemplo, un tiempo máximo de verde).
 
 ## Limitaciones
 
