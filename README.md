@@ -19,6 +19,7 @@ No se tocan semáforos reales: todo se prueba en simulación.
 |---|---|
 | `scenarios/` | Escenarios de SUMO (red + demanda). Ver [scenarios/README.md](scenarios/README.md) |
 | `scripts/demo_franjas.py` | Prototipo: plan fijo vs. Q-learning por franja horaria (ver más abajo) |
+| `scripts/exportar_traza.py` | Graba la simulación (autos y semáforo) para la demo web `docs/demo/` |
 | `scripts/graficar_franjas.py` | Gráfico del prototipo de franjas |
 | `data/` | Datos de entrada: perfil horario de la zona y cruces semaforizados |
 | `results_ejemplo/` | CSV de una corrida de ejemplo del prototipo |
@@ -44,6 +45,10 @@ python scripts/graficar_franjas.py
 Tarda unos 8 minutos (4 franjas). Deja los resultados en `results/franjas/` y el gráfico en `docs/franjas_fijo_vs_ql.png`. Una corrida de ejemplo está en `results_ejemplo/`. Detalle y limitaciones: [docs/prototipo-franjas.md](docs/prototipo-franjas.md).
 
 ![Plan fijo vs Q-learning por franja](docs/franjas_fijo_vs_ql.png)
+
+### Ver la demo en el navegador
+
+Abrí `docs/demo/index.html` con doble clic (no hace falta servidor ni instalar nada). Reproduce, lado a lado, una simulación grabada de SUMO con el plan fijo y con Q-learning, por franja horaria. Es una **reproducción de una corrida ya hecha**, no una simulación en vivo. Para regenerarla con otra demanda o más entrenamiento: `python scripts/exportar_traza.py` (ver `--help`).
 
 ## Estado
 

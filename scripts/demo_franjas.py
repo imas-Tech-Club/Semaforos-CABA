@@ -64,7 +64,7 @@ def gen_demanda(net, out_rou, period, seconds, seed):
     return sum(1 for ln in out_rou.read_text(encoding="utf-8").splitlines() if "<vehicle " in ln)
 
 
-def make_env(args, route, out_csv, fixed):
+def make_env(args, route, out_csv, fixed, extra_cmd=""):
     scen = SCEN_DIR / args.scenario
     plan = scen / "plan-real.add.xml"
     extra = ""
@@ -76,7 +76,7 @@ def make_env(args, route, out_csv, fixed):
     return SumoEnvironment(
         net_file=str(scen / "cruce.net.xml"), route_file=str(route), out_csv_name=str(out_csv),
         use_gui=False, num_seconds=args.seconds, delta_time=5, yellow_time=3, min_green=5,
-        fixed_ts=fixed, sumo_warnings=False, additional_sumo_cmd="--no-step-log true" + extra,
+        fixed_ts=fixed, sumo_warnings=False, additional_sumo_cmd="--no-step-log true" + extra + extra_cmd,
     )
 
 
@@ -98,8 +98,8 @@ def run_fija(args, route, wd, tag=""):
     return medias(sorted(wd.glob(f"fijo{tag}_conn*_ep1.csv"))[-1])
 
 
-def run_ql(args, route_train, routes_test, wd):
-    """Entrena en route_train y evalúa sin explorar ni aprender en cada demanda de routes_test."""
+def entrenar(args, route_train, wd):
+    """Entrena Q-learning en route_train. Devuelve (agentes, curva de aprendizaje)."""
     env = make_env(args, route_train, wd / "ql", fixed=False)
     agents, curva = None, []
     for ep in range(1, args.episodes + 1):
@@ -120,28 +120,34 @@ def run_ql(args, route_train, routes_test, wd):
         env.save_csv(str(wd / "ql"), ep)
         curva.append({"episodio": ep, **medias(sorted(wd.glob(f"ql_conn*_ep{ep}.csv"))[-1])})
     env.close()
+    return agents, curva
 
-    # Evaluación: política greedy, sin aprender, en demandas que no vio al entrenar
-    evals = []
-    for k, route_test in enumerate(routes_test):
-        env = make_env(args, route_test, wd / f"ql_eval{k}", fixed=False)
-        obs = env.reset()
+
+def evaluar(args, agents, route_test, wd, k, extra_cmd=""):
+    """Política greedy, sin aprender, en una demanda que no vio al entrenar."""
+    env = make_env(args, route_test, wd / f"ql_eval{k}", fixed=False, extra_cmd=extra_cmd)
+    obs = env.reset()
+    for ts, a in agents.items():
+        a.exploration.epsilon = 0.0
+        a.state = env.encode(obs[ts], ts)
+    done = {"__all__": False}
+    while not done["__all__"]:
+        acts = {}
         for ts, a in agents.items():
-            a.exploration.epsilon = 0.0
-            a.state = env.encode(obs[ts], ts)
-        done = {"__all__": False}
-        while not done["__all__"]:
-            acts = {}
-            for ts, a in agents.items():
-                a.q_table.setdefault(a.state, [0] * a.action_space.n)  # estado no visto: acción 0
-                acts[ts] = a.act()
-            s, _, done, _ = env.step(action=acts)
-            for ts in s:
-                agents[ts].state = env.encode(s[ts], ts)
-        env.save_csv(str(wd / f"ql_eval{k}"), 1)
-        env.close()
-        evals.append(medias(sorted(wd.glob(f"ql_eval{k}_conn*_ep1.csv"))[-1]))
-    return evals, curva
+            a.q_table.setdefault(a.state, [0] * a.action_space.n)  # estado no visto: acción 0
+            acts[ts] = a.act()
+        s, _, done, _ = env.step(action=acts)
+        for ts in s:
+            agents[ts].state = env.encode(s[ts], ts)
+    env.save_csv(str(wd / f"ql_eval{k}"), 1)
+    env.close()
+    return medias(sorted(wd.glob(f"ql_eval{k}_conn*_ep1.csv"))[-1])
+
+
+def run_ql(args, route_train, routes_test, wd):
+    """Entrena en route_train y evalúa en cada demanda de routes_test."""
+    agents, curva = entrenar(args, route_train, wd)
+    return [evaluar(args, agents, rt, wd, k) for k, rt in enumerate(routes_test)], curva
 
 
 def main():
