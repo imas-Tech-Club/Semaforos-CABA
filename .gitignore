@@ -4,3 +4,5 @@ __pycache__/
 results/
 # Generados por SUMO al correr escenarios
 *.log
+# Descargas locales grandes (ej. GTFS)
+data/raw/
