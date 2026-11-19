@@ -1,269 +1,158 @@
 <!doctype html>
-<html lang="es">
+<html lang="es-AR">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Semáforos CABA — Demo de franjas</title>
-<style>
-:root{
-  --bg:#f6f7f9; --panel:#fff; --ink:#1b2430; --muted:#5d6b7c; --line:#d9dee5;
-  --road:#aeb6c1; --junc:#9aa3af; --moving:#1f77b4; --stopped:#e8710a; --fijo:#6b7280; --ql:#0f9d8a;
-  --warn-bg:#fff4d6; --warn-ink:#5a4300; --warn-line:#e6c25c; --canvas:#eef0f3;
-}
-@media (prefers-color-scheme: dark){
-  :root:not([data-theme="light"]){
-    --bg:#12161c; --panel:#1b212a; --ink:#e7ebf0; --muted:#9aa6b5; --line:#2c3441;
-    --road:#4a5361; --junc:#586171; --moving:#5aa9e6; --stopped:#ff9a3d; --fijo:#9ca3af; --ql:#3ccfb8;
-    --warn-bg:#3a3118; --warn-ink:#f1dca0; --warn-line:#6b5a22; --canvas:#161b22;
-  }
-}
-*{box-sizing:border-box}
-body{margin:0;overflow-wrap:anywhere;background:var(--bg);color:var(--ink);font:16px/1.5 system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
-.wrap{max-width:1100px;margin:0 auto;padding:20px 16px 56px}
-h1{font-size:1.5rem;margin:0 0 4px}
-h2{font-size:1.1rem;margin:28px 0 10px}
-.sub{color:var(--muted);margin:0 0 16px}
-.warn{background:var(--warn-bg);color:var(--warn-ink);border:1px solid var(--warn-line);border-radius:8px;padding:10px 14px;margin:0 0 18px;font-size:.95rem}
-.tabs{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 12px}
-.tabs button,.ctrl button{font:inherit;border:1px solid var(--line);background:var(--panel);color:var(--ink);border-radius:8px;padding:6px 14px;cursor:pointer}
-.tabs button[aria-pressed="true"]{border-color:var(--ql);box-shadow:inset 0 0 0 1px var(--ql);font-weight:600}
-.meta{color:var(--muted);font-size:.9rem;margin:0 0 12px}
-.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-@media (max-width:720px){.grid{grid-template-columns:1fr}}
-.card{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:10px}
-.card h3{margin:0 0 6px;font-size:1rem;display:flex;align-items:center;gap:8px}
-.dot{width:10px;height:10px;border-radius:50%;display:inline-block}
-canvas{width:100%;height:auto;aspect-ratio:1/1;background:var(--canvas);border-radius:6px;display:block}
-.stats{display:flex;flex-wrap:wrap;gap:4px 18px;margin-top:8px;font-size:.92rem;color:var(--muted)}
-.stats b{color:var(--ink);font-variant-numeric:tabular-nums}
-.ctrl{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin:12px 0}
-.ctrl input[type=range]{flex:1;min-width:160px}
-.leg{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:.88rem;color:var(--muted);margin:6px 0 0}
-.leg i{display:inline-block;width:14px;height:8px;border-radius:2px;margin-right:5px;vertical-align:middle}
-table{border-collapse:collapse;width:100%;font-size:.93rem;background:var(--panel);border:1px solid var(--line);border-radius:8px;overflow:hidden}
-th,td{padding:8px 10px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
-th{font-weight:600;background:var(--bg)}
-td.n{text-align:right;font-variant-numeric:tabular-nums}
-.bars{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px}
-.bar-row{display:grid;grid-template-columns:96px 1fr;gap:8px;align-items:center;margin:4px 0;font-size:.9rem}
-.bar-track{height:16px;position:relative}
-.bar{height:100%;border-radius:3px;min-width:2px}
-.bar-val{position:absolute;left:calc(var(--w) + 6px);top:-2px;font-size:.85rem;color:var(--muted);white-space:nowrap}
-.tag{font-size:.78rem;font-weight:700;padding:1px 7px;border-radius:99px;border:1px solid var(--line)}
-ul{padding-left:20px}
-footer{margin-top:36px;color:var(--muted);font-size:.88rem}
-a{color:var(--ql)}
-</style>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Semáforos CABA</title>
+  <meta name="description" content="Simulación del cruce Av. Santa Fe × Av. Coronel Díaz: un semáforo de tiempos fijos contra uno que aprende (Q-learning), por franja horaria. Prueba técnica del imas+ tech club.">
+  <link rel="icon" href="img/favicon.png" type="image/png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;600;700&family=Fredoka:wght@500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="estilos.css">
 </head>
 <body>
-<div class="wrap">
-  <h1>Semáforos CABA — Plan fijo vs. Q-learning</h1>
-  <p class="sub">Cruce Av. Santa Fe × Av. Coronel Díaz, simulado en SUMO. Reproducción de una simulación grabada, por franja horaria.</p>
-
-  <div class="warn"><strong>Prueba técnica, no una conclusión sobre el semáforo real.</strong>
-    El plan fijo es de <b>relleno</b> (90 s generado por <code>netconvert</code>, no es el de la Ciudad) y el nivel de demanda es un <b>supuesto</b>.
-    Que Q-learning gane en esta simulación no significa que mejore el cruce real.</div>
-
-  <div class="tabs" id="tabs" role="group" aria-label="Franja horaria"></div>
-  <p class="meta" id="meta"></p>
-
-  <div class="grid">
-    <div class="card"><h3><span class="dot" style="background:var(--fijo)"></span>Plan fijo (relleno de 90 s)</h3>
-      <canvas id="c-fijo" width="640" height="640" aria-label="Simulación con plan fijo"></canvas>
-      <div class="stats"><span>Semáforo: <b id="s-fijo">–</b></span><span>Detenidos ahora: <b id="d-fijo">0</b></span><span>Detenidos, promedio de lo visto: <b id="p-fijo">0</b></span><span>Hora completa: espera media <b id="e-fijo">–</b></span></div>
+  <header class="marca">
+    <div class="marca__interior">
+      <a class="marca__logo" href="https://github.com/imas-Tech-Club/Semaforos-CABA">
+        <img src="img/logo-imas.png" alt="imas+ tech club" width="186" height="88">
+      </a>
+      <div class="marca__texto">
+        <h1>Semáforos CABA</h1>
+        <p>¿Puede un semáforo que aprende manejar un cruce mejor que uno de tiempos fijos? Simulación del cruce
+          Av. Santa Fe × Av. Coronel Díaz, franja por franja del día.</p>
+      </div>
     </div>
-    <div class="card"><h3><span class="dot" style="background:var(--ql)"></span>Q-learning (SUMO-RL)</h3>
-      <canvas id="c-ql" width="640" height="640" aria-label="Simulación con Q-learning"></canvas>
-      <div class="stats"><span>Semáforo: <b id="s-ql">–</b></span><span>Detenidos ahora: <b id="d-ql">0</b></span><span>Detenidos, promedio de lo visto: <b id="p-ql">0</b></span><span>Hora completa: espera media <b id="e-ql">–</b></span></div>
+  </header>
+
+  <main>
+    <section class="intro" aria-labelledby="que-es">
+      <div>
+        <h2 id="que-es">Qué estás viendo</h2>
+        <p>Es una simulación del cruce de Av. Santa Fe y Av. Coronel Díaz, en Palermo, hecha en
+          <a href="https://eclipse.dev/sumo/">SUMO</a>, un simulador de tránsito de código abierto. Las calles salen de
+          OpenStreetMap. Abajo hay <b>dos copias del mismo cruce con la misma cantidad de autos</b>; lo único que cambia es
+          cómo funciona el semáforo:</p>
+        <ul class="planes">
+          <li><b>Plan fijo</b>Repite siempre el mismo ciclo de 90 s: 41 s de verde para cada eje y 4 s de amarillo. Es un plan
+            de relleno que arma el simulador, <b style="display:inline">no es el plan real</b> del cruce.</li>
+          <li class="ql"><b>Q-learning</b>Un agente de aprendizaje por refuerzo (<a href="https://github.com/LucasAlegre/sumo-rl">SUMO-RL</a>)
+            que mira cuántos autos esperan en cada acceso y decide cuándo cambiar de fase. Se entrenó 10 episodios de una hora
+            simulada y se evaluó <b style="display:inline">sin seguir aprendiendo</b>, con demandas que no vio al entrenar.</li>
+        </ul>
+        <p>La cantidad de autos depende de la <b>franja horaria</b> que elijas (madrugada, pico, valle de tarde o noche) y sigue
+          la forma típica del tránsito de la zona a lo largo del día.</p>
+        <p>Es parte del proyecto del imas+ tech club para evaluar, con un gemelo digital en SUMO calibrado con datos de la
+          Ciudad, si adaptar los tiempos de los semáforos a cada franja reduce demoras y colas. Esta es la primera etapa, con un
+          solo cruce; la siguiente es un corredor de 5 a 10 cruces, todavía sin definir. No se toca ningún semáforo real.</p>
+      </div>
+      <aside class="guia" aria-label="Cómo leer la simulación">
+        <h3>Cómo leerla</h3>
+        <ul>
+          <li><span class="chip" style="background:var(--auto)"></span>Auto en movimiento.</li>
+          <li><span class="chip" style="background:var(--auto-detenido)"></span>Auto detenido (velocidad casi cero).</li>
+          <li>Las rayas pegadas al cruce son el semáforo de cada acceso: <b style="color:#16a34a">verde</b>, <b style="color:#ca8a04">amarillo</b> o <b style="color:#dc2626">rojo</b>.</li>
+          <li>Si hay menos autos detenidos y el semáforo se adapta a la fila, el plan está funcionando mejor <i>en la simulación</i>.</li>
+          <li>Los números de abajo comparan la espera promedio de cada plan sobre la hora completa.</li>
+        </ul>
+      </aside>
+      <p class="aviso"><strong>Es una prueba técnica, no una conclusión sobre el semáforo real.</strong> El plan fijo es de
+        <b>relleno</b> y el nivel de demanda es un <b>supuesto</b>. Que Q-learning gane en la simulación no quiere decir que
+        mejore el cruce real.</p>
+    </section>
+
+    <form class="filtros" aria-label="Qué ver" onsubmit="return false">
+      <fieldset class="filtro">
+        <legend>Franja horaria</legend>
+        <div class="segmentado" id="franjas"></div>
+      </fieldset>
+      <label class="filtro">
+        <span>Velocidad</span>
+        <select id="vel">
+          <option value="1">1×</option><option value="2" selected>2×</option><option value="4">4×</option><option value="8">8×</option>
+        </select>
+      </label>
+    </form>
+    <p class="meta" id="meta"></p>
+
+    <div class="paneles">
+      <section class="panel" aria-labelledby="t-fijo">
+        <h2 id="t-fijo"><i style="background:var(--serie-fijo)"></i>Plan fijo (relleno de 90 s)</h2>
+        <canvas id="c-fijo" width="640" height="640" role="img" aria-label="Simulación del cruce con plan fijo"></canvas>
+        <div class="estado" aria-live="off">
+          <span>Semáforo: <b id="s-fijo">–</b></span>
+          <span>Autos detenidos ahora: <b id="d-fijo">0</b></span>
+        </div>
+      </section>
+      <section class="panel" aria-labelledby="t-ql">
+        <h2 id="t-ql"><i style="background:var(--serie-ql)"></i>Q-learning (SUMO-RL)</h2>
+        <canvas id="c-ql" width="640" height="640" role="img" aria-label="Simulación del cruce con Q-learning"></canvas>
+        <div class="estado" aria-live="off">
+          <span>Semáforo: <b id="s-ql">–</b></span>
+          <span>Autos detenidos ahora: <b id="d-ql">0</b></span>
+        </div>
+      </section>
     </div>
-  </div>
 
-  <div class="ctrl">
-    <button id="play" type="button">Pausa</button>
-    <button id="reset" type="button">Reiniciar</button>
-    <label>Velocidad <select id="vel"><option value="1">1×</option><option value="2" selected>2×</option><option value="4">4×</option><option value="8">8×</option></select></label>
-    <input id="t" type="range" min="0" max="0" value="0" aria-label="Tiempo simulado">
-    <span id="tl" style="font-variant-numeric:tabular-nums;color:var(--muted)">0 s</span>
-  </div>
-  <div class="leg">
-    <span><i style="background:var(--moving)"></i>auto en movimiento</span>
-    <span><i style="background:var(--stopped)"></i>auto detenido</span>
-    <span>Las rayas junto al cruce son el semáforo: verde, amarillo o rojo.</span>
-  </div>
-  <p class="meta" id="vent"></p>
+    <div class="control">
+      <button id="play" type="button">Pausa</button>
+      <button id="reset" type="button">Reiniciar</button>
+      <input id="t" type="range" min="0" max="0" value="0" aria-label="Tiempo simulado">
+      <span class="tiempo" id="tl">0 s</span>
+    </div>
+    <p class="nota" id="vent"></p>
 
-  <h2>Espera media por franja (mediana de 4 demandas de evaluación)</h2>
-  <div class="bars" id="bars"></div>
-  <p class="meta">Fuente: <code>results_ejemplo/resumen.csv</code>, corrida del 19/11 de 10 episodios de entrenamiento. “Espera media” es la métrica <code>system_mean_waiting_time</code> de SUMO-RL: sirve para comparar planes entre sí, no para decir cuántos minutos pierde cada conductor.</p>
+    <section class="cifras-wrap" aria-labelledby="cifras-titulo">
+      <h2 id="cifras-titulo">Los números de esta corrida</h2>
+      <p class="nota" style="margin-top:0">Hora simulada completa de la corrida que ves arriba, no solo los minutos grabados.</p>
+      <dl class="cifras" id="cifras"></dl>
+    </section>
 
-  <h2>Qué es real, supuesto y relleno</h2>
-  <div style="overflow-x:auto"><table>
-    <tr><th>Etiqueta</th><th>Qué entra</th></tr>
-    <tr><td><span class="tag">REAL</span></td><td>Red vial (OpenStreetMap). Forma horaria del tránsito: API de Transporte, semana típica de marzo de 2020, zona <code>48Q3CH00</code> (~5 km). Sirve para la forma del día, no para el volumen de un cruce.</td></tr>
-    <tr><td><span class="tag">SUPUESTO</span></td><td>Nivel de demanda: un vehículo cada 3 s en el pico, dividido por el índice horario de cada franja.</td></tr>
-    <tr><td><span class="tag">RELLENO</span></td><td>Plan fijo de 90 s (41/4/41/4) generado por <code>netconvert</code>. Se reemplaza con los tiempos medidos (<code>plan-real.add.xml</code>) cuando estén.</td></tr>
-  </table></div>
+    <section class="barras" aria-labelledby="barras-titulo">
+      <h2 id="barras-titulo">Espera media por franja</h2>
+      <div id="barras"></div>
+      <ul class="leyenda"><li><span class="chip" style="background:var(--serie-fijo)"></span>Plan fijo</li><li><span class="chip" style="background:var(--serie-ql)"></span>Q-learning</li></ul>
+      <p class="nota">Mediana de 4 demandas de evaluación distintas por franja (corrida del 19/11, <code>results_ejemplo/resumen.csv</code>).
+        La “espera media” es la métrica <code>system_mean_waiting_time</code> de SUMO-RL: sirve para comparar planes entre sí,
+        no para decir cuántos minutos pierde cada conductor.</p>
+    </section>
 
-  <h2>Limitaciones que hay que decir</h2>
-  <ul>
-    <li><b>Q-learning es inestable.</b> En una corrida anterior (14/11) una demanda del valle lo hizo colapsar (351 s de espera media). En la del 19/11 no. Por eso se entrena con una semilla, se evalúa en 4 distintas y se reportan medianas.</li>
-    <li>Un solo cruce, sin peatones, colectivos ni coordinación con otros cruces. El corredor de 5 a 10 cruces todavía no está definido.</li>
-    <li>No existe un dataset abierto con tiempos de ciclo o fases de los semáforos de la Ciudad. Falta medir el ciclo real en este cruce.</li>
-    <li>Esta página reproduce <b>una</b> evaluación grabada por franja. Los números de las barras salen de las 4 evaluaciones; los de “detenidos” en vivo, solo de la que ves.</li>
-  </ul>
+    <section class="seccion" aria-labelledby="datos-titulo">
+      <h2 id="datos-titulo">Qué es real, qué es supuesto y qué es relleno</h2>
+      <div class="tabla-scroll">
+        <table>
+          <thead><tr><th>Etiqueta</th><th>Qué entra</th></tr></thead>
+          <tbody>
+            <tr><td><span class="etiqueta etiqueta--real">REAL</span></td><td>La red vial (OpenStreetMap) y la <b>forma</b> del tránsito a lo largo del día: API de Transporte de la Ciudad, semana típica de marzo de 2020, zona <code>48Q3CH00</code> (unos 5 km). Sirve para saber cuánto más o menos tránsito hay en cada franja, no para el volumen de este cruce.</td></tr>
+            <tr><td><span class="etiqueta etiqueta--supuesto">SUPUESTO</span></td><td>El nivel de demanda: un vehículo cada 3 s en el pico, dividido por el índice horario de cada franja.</td></tr>
+            <tr><td><span class="etiqueta etiqueta--relleno">RELLENO</span></td><td>El plan fijo de 90 s (41/4/41/4) que genera <code>netconvert</code>. Se reemplaza por los tiempos medidos del cruce cuando los tengamos.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
 
-  <footer>Código y datos: <a href="https://github.com/imas-Tech-Club/Semaforos-CABA">imas-Tech-Club/Semaforos-CABA</a> · Se regenera con <code>python scripts/exportar_traza.py</code> · Detalle en <code>docs/prototipo-franjas.md</code></footer>
-</div>
+    <section class="seccion" aria-labelledby="lim-titulo">
+      <h2 id="lim-titulo">Lo que todavía falta y hay que tener en cuenta</h2>
+      <ul>
+        <li><b>Q-learning es inestable.</b> En una corrida anterior (14/11), una demanda del valle lo hizo colapsar: 351 s de espera media. En la del 19/11 no pasó. Por eso se entrena con una semilla, se evalúa en 4 distintas y se reportan medianas.</li>
+        <li><b>No hay datos abiertos de los tiempos de los semáforos de la Ciudad.</b> Falta medir el ciclo real del cruce, y cuando lo tengamos hay que repetir la comparación.</li>
+        <li>Es un solo cruce, sin peatones, colectivos ni coordinación con cruces vecinos.</li>
+        <li>Esta página reproduce <b>una</b> evaluación grabada por franja. Las barras de arriba resumen las 4 evaluaciones de cada una.</li>
+      </ul>
+    </section>
+  </main>
 
-<script src="trazas.js"></script>
-<script>
-(function(){
-  var D = window.TRAZAS;
-  var NOMBRE = {madrugada:"Madrugada (4 h)", pico:"Pico (12 h)", valle:"Valle de tarde (17 h)", noche:"Noche (20 h)"};
-  // Medianas de results_ejemplo/resumen.csv (espera media en s)
-  var RES = {
-    madrugada:{fijo:3.213, ql:0.057}, pico:{fijo:3.678, ql:0.199},
-    valle:{fijo:3.494, ql:0.105}, noche:{fijo:3.510, ql:0.152}
-  };
-  var LEN = 6, WID = 2.6; // autos dibujados un poco más grandes que reales (4,5 × 1,9 m) para que se vean
-  var css = function(n){ return getComputedStyle(document.documentElement).getPropertyValue(n).trim(); };
+  <footer class="pie">
+    <p>Hecho por el imas+ tech club. El código y los datos son abiertos:
+      <a href="https://github.com/imas-Tech-Club/Semaforos-CABA">repositorio en GitHub</a>. La simulación se regenera con
+      <code>python scripts/exportar_traza.py</code>; el detalle está en <code>docs/prototipo-franjas.md</code>.</p>
+    <p>Fuentes: calles de OpenStreetMap, forma horaria del tránsito de la API de Transporte del Gobierno de la Ciudad,
+      simulación con SUMO y aprendizaje con SUMO-RL.</p>
+    <p>Esto es una reproducción de simulaciones ya hechas, no una medición del cruce real. No reemplaza el criterio de un
+      ingeniero de tránsito.</p>
+  </footer>
 
-  var geo = D.geo, caja = geo.caja;
-  var franja = null, t = 0, playing = true, last = 0, acum = {fijo:[0,0], ql:[0,0]}, estadoSeg = {};
-
-  var cv = {fijo: document.getElementById("c-fijo"), ql: document.getElementById("c-ql")};
-  var cx = {fijo: cv.fijo.getContext("2d"), ql: cv.ql.getContext("2d")};
-  var W = cv.fijo.width, H = cv.fijo.height, pad = 24;
-  // Vista centrada en el cruce semaforizado (los carriles de afuera se recortan)
-  var cxm = 0, cym = 0;
-  geo.lineas.forEach(function(l){ cxm += l.p[0]/geo.lineas.length; cym += l.p[1]/geo.lineas.length; });
-  var MEDIO = 120; // metros desde el centro hasta el borde de la vista
-  var esc = (W-2*pad)/(2*MEDIO);
-  function px(x){ return W/2 + (x-cxm)*esc; }
-  function py(y){ return H/2 - (y-cym)*esc; }
-
-  // Tabs
-  var tabs = document.getElementById("tabs");
-  Object.keys(D.franjas).forEach(function(f){
-    var b = document.createElement("button"); b.type="button"; b.textContent = NOMBRE[f]||f;
-    b.onclick = function(){ elegir(f); }; b.dataset.f = f; tabs.appendChild(b);
-  });
-
-  function prepararEstados(f, plan){
-    var d = D.franjas[f][plan], n = d.v.length, arr = new Array(n), cur = d.tls0, k = 0;
-    for(var s=0;s<n;s++){
-      while(k < d.tls.length && d.tls[k][0] <= s){ cur = d.tls[k][1]; k++; }
-      arr[s] = cur;
-    }
-    return arr;
-  }
-  function elegir(f){
-    franja = f; t = 0; acum = {fijo:[0,0], ql:[0,0]};
-    estadoSeg = {fijo: prepararEstados(f,"fijo"), ql: prepararEstados(f,"ql")};
-    var d = D.franjas[f], n = d.fijo.v.length;
-    var sl = document.getElementById("t"); sl.max = n-1; sl.value = 0;
-    Array.prototype.forEach.call(tabs.children, function(b){ b.setAttribute("aria-pressed", b.dataset.f===f); });
-    document.getElementById("meta").textContent = "Franja " + (NOMBRE[f]||f) + ": índice horario " + d.indice.toFixed(2) +
-      " → ~" + d.veh_por_hora + " vehículos por hora (supuesto). Ambos planes ven la misma demanda.";
-    document.getElementById("vent").textContent = "Se muestran " + n + " s simulados, desde el segundo " + D.ventana.inicio_s +
-      " de una hora simulada (la red ya está cargada).";
-    ["fijo","ql"].forEach(function(p){
-      document.getElementById("e-"+p).textContent = d[p].espera_media_s.toFixed(2).replace(".",",") + " s, detenidos " + d[p].detenidos_medio.toFixed(1).replace(".",",");
-    });
-    dibujar();
-  }
-
-  function colorLuz(c){ return c==="G"||c==="g" ? "#22c55e" : (c==="y"||c==="Y" ? "#facc15" : "#ef4444"); }
-  function resumenSemaforo(st){
-    var g = 0, y = 0; for(var i=0;i<st.length;i++){ if(st[i]==="G"||st[i]==="g") g++; else if(st[i]==="y"||st[i]==="Y") y++; }
-    return y>0 && g===0 ? "amarillo" : (g>0 ? "verde para un eje" : "todo rojo");
-  }
-
-  function base(ctx){
-    ctx.clearRect(0,0,W,H);
-    ctx.lineCap = "butt"; ctx.lineJoin = "round";
-    ctx.strokeStyle = css("--road"); ctx.fillStyle = css("--junc");
-    geo.carriles.forEach(function(c){
-      ctx.beginPath(); c.s.forEach(function(p,i){ i?ctx.lineTo(px(p[0]),py(p[1])):ctx.moveTo(px(p[0]),py(p[1])); });
-      ctx.lineWidth = Math.max(2, c.w*esc*0.95); ctx.stroke();
-    });
-    geo.juncs.forEach(function(j){
-      ctx.beginPath(); j.forEach(function(p,i){ i?ctx.lineTo(px(p[0]),py(p[1])):ctx.moveTo(px(p[0]),py(p[1])); }); ctx.closePath(); ctx.fill();
-    });
-  }
-  function luces(ctx, st){
-    geo.lineas.forEach(function(l){
-      var m = Math.hypot(l.d[0], l.d[1]) || 1, dx = l.d[0]/m, dy = l.d[1]/m;
-      var nx = -dy, ny = dx, hw = l.w/2;
-      ctx.strokeStyle = colorLuz(st[l.i]||"r"); ctx.lineWidth = Math.max(3, 0.9*esc);
-      ctx.beginPath();
-      ctx.moveTo(px(l.p[0]-nx*hw), py(l.p[1]-ny*hw)); ctx.lineTo(px(l.p[0]+nx*hw), py(l.p[1]+ny*hw)); ctx.stroke();
-    });
-  }
-  function autos(ctx, fila){
-    var movil = css("--moving"), quieto = css("--stopped"), n = 0, det = 0;
-    for(var i=0;i<fila.length;i+=4){
-      var x = fila[i]/10, y = fila[i+1]/10, a = fila[i+2]*Math.PI/180, v = fila[i+3]/10;
-      var parado = v < 0.1; n++; if(parado) det++;
-      // x,y es el paragolpes delantero: el centro queda LEN/2 hacia atrás
-      var cxw = x - Math.sin(a)*2.25, cyw = y - Math.cos(a)*2.25;
-      ctx.save(); ctx.translate(px(cxw), py(cyw)); ctx.rotate(a);
-      ctx.fillStyle = parado ? quieto : movil;
-      ctx.fillRect(-WID*esc/2, -LEN*esc/2, WID*esc, LEN*esc); ctx.restore();
-    }
-    return det;
-  }
-  function dibujar(){
-    if(!franja) return;
-    var d = D.franjas[franja], s = Math.min(Math.floor(t), d.fijo.v.length-1);
-    ["fijo","ql"].forEach(function(p){
-      var ctx = cx[p], st = estadoSeg[p][s];
-      base(ctx); var det = autos(ctx, d[p].v[s]); luces(ctx, st);
-      document.getElementById("d-"+p).textContent = det;
-      document.getElementById("s-"+p).textContent = resumenSemaforo(st);
-      var a = acum[p]; if(a.last !== s){ a[0] += det; a[1] += 1; a.last = s; }
-      document.getElementById("p-"+p).textContent = a[1] ? (a[0]/a[1]).toFixed(1) : "0";
-    });
-    document.getElementById("tl").textContent = s + " s";
-    document.getElementById("t").value = s;
-  }
-
-  function loop(ts){
-    if(playing && franja){
-      var dt = last ? (ts-last)/1000 : 0, vel = +document.getElementById("vel").value;
-      t += dt*vel;
-      var n = D.franjas[franja].fijo.v.length;
-      if(t >= n){ t = 0; acum = {fijo:[0,0], ql:[0,0]}; }
-      dibujar();
-    }
-    last = ts; requestAnimationFrame(loop);
-  }
-
-  document.getElementById("play").onclick = function(){ playing = !playing; this.textContent = playing ? "Pausa" : "Seguir"; };
-  document.getElementById("reset").onclick = function(){ t = 0; acum = {fijo:[0,0], ql:[0,0]}; dibujar(); };
-  document.getElementById("t").oninput = function(){ t = +this.value; acum = {fijo:[0,0], ql:[0,0]}; dibujar(); };
-  window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", dibujar);
-
-  // Barras: espera media por franja
-  var bars = document.getElementById("bars"), mx = 0;
-  Object.keys(D.franjas).forEach(function(f){ if(RES[f]) mx = Math.max(mx, RES[f].fijo, RES[f].ql); });
-  Object.keys(D.franjas).forEach(function(f){
-    if(!RES[f]) return;
-    [["fijo","Plan fijo","--fijo"],["ql","Q-learning","--ql"]].forEach(function(r, i){
-      var row = document.createElement("div"); row.className = "bar-row";
-      var lab = document.createElement("div"); lab.textContent = i===0 ? (NOMBRE[f]||f).split(" (")[0] : ""; lab.style.fontWeight = 600;
-      var tr = document.createElement("div"); tr.className = "bar-track";
-      var w = (RES[f][r[0]]/mx*45);
-      tr.style.setProperty("--w", w+"%");
-      var b = document.createElement("div"); b.className = "bar"; b.style.width = w+"%"; b.style.background = "var("+r[2]+")";
-      var v = document.createElement("span"); v.className = "bar-val"; v.textContent = r[1] + ": " + RES[f][r[0]].toFixed(2).replace(".",",") + " s";
-      tr.appendChild(b); tr.appendChild(v); row.appendChild(lab); row.appendChild(tr); bars.appendChild(row);
-    });
-  });
-
-  elegir(Object.keys(D.franjas).indexOf("pico")>=0 ? "pico" : Object.keys(D.franjas)[0]);
-  requestAnimationFrame(loop);
-})();
-</script>
+  <script src="trazas.js"></script>
+  <script src="app.js"></script>
 </body>
 </html>
