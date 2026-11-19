@@ -1,0 +1,16 @@
+<!--
+  PLANTILLA. Completar antes de usar:
+  1) Reemplazar TODAS las duraciones por las medidas u oficiales (hoy son las de netconvert).
+  2) Anotar la fuente: quién midió o qué documento, fecha, franja horaria, cómo se midió.
+     Fuente: 
+     Fecha: 
+  3) Renombrar a plan-real.add.xml. Sin ese nombre no se carga.
+-->
+<additional>
+  <tlLogic id="437539849" type="static" programID="real" offset="0">
+    <phase duration="41" state="rrrrrrrGGgGGGGGg"/>
+    <phase duration="4" state="rrrrrrryyyyyyyyy"/>
+    <phase duration="41" state="GGGGGGGrrrrrrrrr"/>
+    <phase duration="4" state="yyyyyyyrrrrrrrrr"/>
+  </tlLogic>
+</additional>

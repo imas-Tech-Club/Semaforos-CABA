@@ -1,0 +1,7 @@
+<configuration>
+  <input>
+    <net-file value="cruce.net.xml"/>
+    <route-files value="cruce.rou.xml"/>
+  </input>
+  <time><begin value="0"/><end value="3600"/></time>
+</configuration>
